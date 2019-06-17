@@ -1,8 +1,15 @@
 from keras.models import Model
-from keras.layers import MaxPooling1D, Conv1D, LeakyReLU, BatchNormalization, Dense, Flatten
+from keras.layers import MaxPooling1D, Conv1D, LeakyReLU, BatchNormalization, Dense, Flatten,Dropout
 from keras.layers import  Input
 #from Configuration import cnn_N_filt,cnn_len_filt,cnn_max_pool_len,cnn_use_batchnorm,fc_use_laynorm_inp,cnn_use_laynorm,fs,fc_use_batchnorm,fc_use_laynorm,fc_drop,fc_lay
 from Configuration import *
+from keras import backend as K
+from keras.engine.topology import Layer
+from keras.utils import conv_utils
+from keras import initializers
+import numpy as np
+import math
+
 
 def debug_print(*objects):
     if debug:
@@ -39,7 +46,7 @@ class Layer_Normalization(Layer):
     def compute_output_shape(self, input_shape):
         return input_shape
 
-
+#Sinc Convolution implemented here
 class Sinc_Conv_Layer(Layer):
     def __init__(self, N_filt, Filt_dim, fs, **kwargs):
         """
@@ -153,6 +160,7 @@ def sinc(band, t_right):
     return y
 
 
+#stacking model
 def get_model(input_shape, out_dim):
 
     #sinc layer
@@ -197,7 +205,7 @@ def get_model(input_shape, out_dim):
     if fc_use_laynorm[0]:
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
-
+    x = Dropout(0.2)(x)
     #dnn2
     x = Dense(fc_lay[1])(x)
     if fc_use_batchnorm[1]:
@@ -205,6 +213,7 @@ def get_model(input_shape, out_dim):
     if fc_use_laynorm[1]:
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
+    x = Dropout(0.2)(x)
 
     #dnn2
     x = Dense(fc_lay[2])(x)
@@ -213,8 +222,10 @@ def get_model(input_shape, out_dim):
     if fc_use_laynorm[2]:
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
+    x = Dropout(0.2)(x)
 
     # DNN final
     prediction = Dense(out_dim, activation='softmax')(x)
     model = Model(inputs=inputs, outputs=prediction)
     return model
+

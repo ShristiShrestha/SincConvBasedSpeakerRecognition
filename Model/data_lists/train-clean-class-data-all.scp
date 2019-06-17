@@ -1,9 +1,3 @@
-import numpy as np
-label={
-    
-
-
-
 'train-clean-100_arr/0/0.flac':0,
 'train-clean-100_arr/0/1.flac':0,
 'train-clean-100_arr/0/2.flac':0,
@@ -31485,8 +31479,3 @@ label={
 'train-clean-100_arr/261/168.wav':261,
 'train-clean-100_arr/261/169.wav':261,
 'train-clean-100_arr/261/170.wav':261,
-
-    
-}
-
-np.save('train-clean-100_arr_class_all', label)

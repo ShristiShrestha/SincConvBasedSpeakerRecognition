@@ -108,3 +108,4 @@ class MicrophoneRecorder(object):
 		waveFile.setframerate(self.rate)
 		waveFile.writeframes(b''.join(recordframes))
 		waveFile.close()
+

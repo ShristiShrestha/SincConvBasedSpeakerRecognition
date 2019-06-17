@@ -6,17 +6,17 @@ from PyQt5.QtWidgets import *
 from datetime import datetime
 import time
 import shutil
-from model import get_model
+from Model.model import get_model
 import os,pathlib
 import soundfile as sf
-from Configuration import *
-from test_nikita import Validation
-from MicRecorder import MicrophoneRecorder
-from Interface import MplFigure, CreateFolder
-from Recorder import Recorder
-from database import *
-from RecognitionTab import *
-from VarManager import VarManager
+from Model.Configuration import *
+from Model.test_nikita import Validation
+from GUI.MicRecorder import MicrophoneRecorder
+from GUI.Interface import MplFigure, CreateFolder
+from GUI.Recorder import Recorder
+from GUI.database import *
+from GUI.RecognitionTab import *
+from GUI.VarManager import VarManager
 from scipy import stats
 import collections
 
@@ -146,7 +146,7 @@ class LiveFFTWidget(QWidget):
         
     def initUI(self):
 
-        self.setTabs();
+        self.setTabs()
 
         hbox_gain = QtWidgets.QHBoxLayout()
         autoGain = QtWidgets.QLabel('Auto gain for frequency spectrum')
@@ -255,7 +255,7 @@ class LiveFFTWidget(QWidget):
         completed_label = QtWidgets.QLabel("No audio")
 
         def onProgress(i):
-            self.progress.setValue(i);
+            self.progress.setValue(i)
             if(i>99):
                 completed_label.setText("Recording Complete")
 

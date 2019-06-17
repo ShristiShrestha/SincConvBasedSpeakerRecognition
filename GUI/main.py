@@ -1,7 +1,5 @@
 import sys
-
 from GUI import LiveFFTWidget
-
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QIcon
