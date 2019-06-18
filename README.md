@@ -11,3 +11,10 @@
 ##### > set FLASK_ENVIRONMENT= development  
 ##### > flask run # run server at 127.0.0.1:5000
 
+#### 
+##### 127.0.0.1:5000/  => file upload interface, submission and saving the audio file in serverside for validation
+ 
+##### using postman (google chrome extension)
+###### POST: 127.0.0.1:5000/identification in the url
+###### select form-data (parm), key= file and choose file and hit send 
+###### return json ( after integration, it will return id, username, % acc, response code)
