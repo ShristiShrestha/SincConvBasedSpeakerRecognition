@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/upload.css') }}" />
+        <title>Speaker Recognition</title>
+    </head>
+    <body>
+        <div id="title">
+            <h1>Identification </h1>
+        </div>
+        <br>
+        <div>
+            <form action="/identification" method="POST" id="form" enctype="multipart/form-data">
+                <div class="input-file-container">  
+                    <input class="my-file" type="file" name="file"> <!-- js-->
+                    <hr>
+                    <input class="btn btn-success" type="submit">
+                </div>
+            </form>
+        </div>
+        
+    </body>
+</html>
+
+
+ 
+  
