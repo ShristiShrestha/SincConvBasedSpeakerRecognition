@@ -6,21 +6,19 @@ from PyQt5.QtWidgets import *
 from datetime import datetime
 import time
 import shutil
-from Model.model import get_model
 import os,pathlib
 import soundfile as sf
-from Model.Configuration import *
-from Model.test_nikita import Validation
-from GUI.MicRecorder import MicrophoneRecorder
-from GUI.Interface import MplFigure, CreateFolder
-from GUI.Recorder import Recorder
-from GUI.database import *
-from GUI.RecognitionTab import *
-from GUI.VarManager import VarManager
+import requests
+import json
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+from MicRecorder import MicrophoneRecorder
+from Interface import MplFigure, CreateFolder
+from Recorder import Recorder
+from RecognitionTab import InfoDialog
+from AuthenticateWindow import AuthenticateWindow
+from VarManager import VarManager
 from scipy import stats
 import collections
-
-#from Logic.test import *
 
 
 def datetime_to_string():
@@ -37,7 +35,6 @@ class Worker(QRunnable):
         '''
         record
         '''
-        print("Thread start") 
         micRecorder = Recorder(channels=1)
 
         datetime_string = datetime_to_string()
@@ -45,7 +42,6 @@ class Worker(QRunnable):
 
         with micRecorder.open("records/"+filename, 'wb') as recfile:
             recfile.start_recording()
-            #time.sleep(10.0)
             while (LiveFFTWidget.stopRecord!=1):
                 pass    
             recfile.stop_recording()
@@ -53,10 +49,7 @@ class Worker(QRunnable):
 
         VarManager.audioPath = "records/"+filename
         VarManager.audioUploaded = False
-        print(VarManager.audioPath)
-
-        print("Recording complete")
-
+        
 
 class RecognitionWorker(QRunnable):
     '''
@@ -67,7 +60,6 @@ class RecognitionWorker(QRunnable):
         '''
         record
         '''
-        print("Thread start") 
         micRecorder = Recorder(channels=1)
 
         datetime_string = datetime.now().strftime("%d%m%Y_%H%M%S")
@@ -77,8 +69,6 @@ class RecognitionWorker(QRunnable):
             time.sleep(10.0)    
             recfile.stop_recording()
             LiveFFTWidget.stopRecord = 0
-
-        print("Recording complete")
 
 
 class CountWorker(QtCore.QThread):
@@ -115,10 +105,8 @@ class LiveFFTWidget(QWidget):
         CreateFolder("records")
 
         self.uploadPhotoName = ""
-
         
         print("Multithreading with maximum %d threads" % LiveFFTWidget.threadpool.maxThreadCount())
-
 
         #customize the UI
         self.initUI()
@@ -143,7 +131,6 @@ class LiveFFTWidget(QWidget):
         userIdFile.write(str(userID))
         userIdFile.close()
 
-        
     def initUI(self):
 
         self.setTabs()
@@ -179,8 +166,6 @@ class LiveFFTWidget(QWidget):
 
         self.SetRecognitionLayout()
 
-
-
         #Assign layouts
         vbox = QtWidgets.QVBoxLayout()
 
@@ -193,21 +178,11 @@ class LiveFFTWidget(QWidget):
 
         vbox.addLayout(self.trainingLayout)
         vbox.addLayout(hbox_gain)
-        #vbox.addLayout(hbox_fixedGain)
-        
-
+    
         # mpl figure
         self.main_figure = MplFigure(self)
         vbox.addWidget(self.main_figure.toolbar)
         vbox.addWidget(self.main_figure.canvas)
-
-
-        #RecognitionTab
-        # self.recognition = Recognition(self)
-        # self.vbox2.addWidget(self.recognition)
-        #self.dialogTextBrowser = MyDialog(self)
-
-
         
         self.tab1.setLayout(vbox)
         self.tab2.setLayout(self.vbox2)
@@ -233,14 +208,10 @@ class LiveFFTWidget(QWidget):
         self.tabs = QTabWidget()
         self.tab1 = QWidget()
         self.tab2 = QWidget()
-        #self.tabs.resize(300, 200)
         
         #Add tabs to the tab widget
         self.tabs.addTab(self.tab1, "Enrollment")
         self.tabs.addTab(self.tab2, "Recognition")
-
-        #self.tabs.setStyleSheet("background-color:lightblue; color:blue;")
-
 
     def SetRecognitionLayout(self):
         self.vbox2 = QtWidgets.QVBoxLayout()   
@@ -264,23 +235,10 @@ class LiveFFTWidget(QWidget):
 
         @pyqtSlot()
         def on_record_button_click():
-            #progress.show()
             completed_label.setText("Recording ...")
             worker = RecognitionWorker()
             LiveFFTWidget.threadpool.start(worker)
-            # count = 0.0
-            # while count < 10:
-            #     count+=0.1
-            #     time.sleep(0.1)
-            #     progress.setValue(count*10)
-            # self.countWorker = CountWorker()
-            # #LiveFFTWidget.threadpool.start(countWorker)
-            # self.countWorker.notifyProgress.connect(onProgress)
             self.countWorker.start()
-            #countThread()
-            
-        
-        
 
         record_button.clicked.connect(on_record_button_click)
         recordLayout.addWidget(Buttons)
@@ -293,14 +251,7 @@ class LiveFFTWidget(QWidget):
         def on_upload_button_click(self):
             fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open file', '/home')
             if fname:
-                #destName = 'uploads/audios/' + "audio_"
-
-                # textEdit.setText(fname)
-                # VarManager.sourceAudioPath = fname
-                # VarManager.audioPath = destName   
-                # VarManager.audioUploaded = True
                 VarManager.recognitionAudioPath = fname
-                print(fname)
         
         upload_button.clicked.connect(on_upload_button_click)
         recordLayout.addWidget(upload_button)
@@ -320,23 +271,18 @@ class LiveFFTWidget(QWidget):
         authenticateButton.setIcon(QtGui.QIcon("img/authentication.png"))
         authenticateButton.setToolTip('Record your voice.')
 
-
-
         recognizeButton.clicked.connect(self.on_recognize_button_click)
         authenticateButton.clicked.connect(self.on_authenticate_button_click)
 
         recognizeLayout.addWidget(recognizeButton)
         recognizeLayout.addWidget(authenticateButton)
 
-
         emptyLayout = QtWidgets.QHBoxLayout()
         emptyLayout.addWidget(QtWidgets.QLabel("\n"))
         self.vbox2.addLayout(emptyLayout)
         
         self.vbox2.addLayout(recordLayout)
-        #self.vbox2.addLayout(self.emptyHLayout)
         self.vbox2.addLayout(progressHLayout)
-        #self.vbox2.addLayout(self.emptyHLayout)
         self.vbox2.addLayout(recognizeLayout) 
         self.vbox2.addLayout(self.emptyHLayout)
         
@@ -346,24 +292,15 @@ class LiveFFTWidget(QWidget):
         photoLabel.setPixmap(pixmap)
         self.vbox2.addWidget(photoLabel)
 
-
     @pyqtSlot()
     def on_recognize_button_click(self):
-
-        #test.main(VarManager.recognitionAudioPath)
-        
-        def completed(best_class, acc):
+        def completed(best_class):
             self.dialogBrowser = InfoDialog(self)
-            self.dialogBrowser.displayInfo(best_class,acc)
+            self.dialogBrowser.displayInfo(best_class)
             self.dialogBrowser.exec_()
-
-
         self.recognitionThread = RecognitionThread()
         self.recognitionThread.recognizeCompleted.connect(completed)
         self.recognitionThread.start()
-
-        
-
 
     @pyqtSlot()
     def on_authenticate_button_click(self):
@@ -378,8 +315,6 @@ class LiveFFTWidget(QWidget):
         db_button.setIcon(QtGui.QIcon("img/dbIcon.png"))
         db_button.setToolTip('Update database')
         
-        
-
         train_button = QtWidgets.QPushButton('Train', self)
         train_button.setIcon(QtGui.QIcon("img/trainingIcon.svg"))
         train_button.setToolTip("Train voice to neural network.")
@@ -395,7 +330,7 @@ class LiveFFTWidget(QWidget):
 
 
     def on_db_button_click(self):
-
+            
             VarManager.photoPath = "uploads/photos/photo_" 
 
             VarManager.userName = self.get_name()
@@ -411,11 +346,26 @@ class LiveFFTWidget(QWidget):
                     pass
                 else:
                     shutil.copy(VarManager.sourceAudioPath, VarManager.audioPath)
+            audio_filename = os.path.basename(VarManager.audioPath)
+            image_filename =  os.path.basename(VarManager.photoPath)
+            multipart_form_data =  MultipartEncoder(
+            fields={
+            # a file upload field
+            'audio': (audio_filename, open(VarManager.audioPath, 'rb')),
+            'image':(image_filename, open(VarManager.photoPath, 'rb')),
+            # plain text fields
+            'uname': VarManager.userName, 
+            'user_id':str(VarManager.userID),
+           } )
+            result = requests.post("http://127.0.0.1:5000/insert",data=multipart_form_data,headers={'Content-Type': multipart_form_data.content_type})
+            data = result.json()
+            if data["message"]=="Success":
+                updateInfo = QtWidgets.QMessageBox.information(None, "Success", "Database Updated...")
+            elif data["message"]=="Error":
+                updateInfo = QtWidgets.QMessageBox.information(None, "Error", "Database Connection failed...")
+            else:
+                updateInfo = QtWidgets.QMessageBox.information(None, "Error", "Bad requests")
 
-            connect_to_db(VarManager.userName, VarManager.userID, VarManager.audioPath, VarManager.photoPath)
-            updateInfo = QtWidgets.QMessageBox.information(None, "Success", "Database Updated...")
-
-    #get_name = lambda x: self.nameEdit.text()
     def get_name(self):
         return self.nameEdit.text()
 
@@ -435,7 +385,6 @@ class LiveFFTWidget(QWidget):
                 LiveFFTWidget.threadpool.start(worker)
             else:
                 recording_info = QtWidgets.QMessageBox.information(None, "Warning!", "Already Recording audio...\n\nClick Stop to stop recording")
-
 
         record_button.clicked.connect(on_record_button_click)
         self.hbox_Record.addWidget(Buttons)
@@ -459,27 +408,22 @@ class LiveFFTWidget(QWidget):
 
         self.stopButton = stop_button
 
-
     def UploadAudio(self):
         self.upload_audio_layout = QtWidgets.QHBoxLayout()
 
         upload_button = QtWidgets.QPushButton('Upload Audio', self)
         upload_button.setIcon(QtGui.QIcon("img/upload.png"))
         upload_button.setToolTip('Upload your audio')
-        #textEdit = QtWidgets.QTextEdit()
         textEdit = QtWidgets.QLabel()
         @pyqtSlot()
         def on_upload_button_clicked(self):
             fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open file', '/home')
             if fname:
                 destName = 'uploads/audios/' + "audio_"
-
                 textEdit.setText(fname)
                 VarManager.sourceAudioPath = fname
                 VarManager.audioPath = destName
                 VarManager.audioUploaded = True
-                print(destName)
-
         upload_button.clicked.connect(on_upload_button_clicked)
         self.upload_audio_layout.addWidget(upload_button)
         self.upload_audio_layout.addWidget(textEdit)
@@ -489,11 +433,9 @@ class LiveFFTWidget(QWidget):
         nameLabel = QtWidgets.QLabel("Name: ")
         self.nameEdit = QtWidgets.QLineEdit()
         
-
         upload_button = QtWidgets.QPushButton('Upload Photo', self)
         upload_button.setIcon(QtGui.QIcon("img/pic.png"))
         upload_button.setToolTip('Upload your photo')
-        #textEdit = QtWidgets.QTextEdit()
         textEdit = QtWidgets.QLabel()
         @pyqtSlot()
         def on_upload_button_clicked(self):
@@ -506,9 +448,6 @@ class LiveFFTWidget(QWidget):
                 VarManager.photoPath = destName
 
                 VarManager.photoExt = pathlib.Path(fname).suffix
-
-                print(destName)
-
         upload_button.clicked.connect(on_upload_button_clicked)
         self.user_info_layout.addWidget(nameLabel)
         self.user_info_layout.addWidget(self.nameEdit)
@@ -535,17 +474,13 @@ class LiveFFTWidget(QWidget):
         references for further use"""
         # top plot
         self.ax_top = self.main_figure.figure.add_subplot(211)
-        #self.ax_top.set_ylim(-32768, 32768)
         self.ax_top.set_ylim(-5000, 5000)
         self.ax_top.set_xlim(0, self.time_vect.max())
         self.ax_top.set_xlabel(u'time (ms)', fontsize=6)
         self.ax_top.set_ylabel(u'amp', fontsize=6)
-        
-
         # bottom plot
         self.ax_bottom = self.main_figure.figure.add_subplot(212)
         self.ax_bottom.set_ylim(0, 1)
-        #self.ax_bottom.set_xlim(0, self.freq_vect.max())
         self.ax_bottom.set_xlim(0, 5000)
         self.ax_bottom.set_xlabel(u'frequency (Hz)', fontsize=6)
         self.ax_bottom.set_ylabel(u'amp', fontsize=6)
@@ -557,10 +492,7 @@ class LiveFFTWidget(QWidget):
 
         self.line_bottom, = self.ax_bottom.plot(self.freq_vect,
                                                np.ones_like(self.freq_vect))
-
-                                               
-
-                                            
+                                    
     def handleNewData(self):
         """ handles the asynchroneously collected sound chunks """        
         # gets the latest frames        
@@ -577,80 +509,36 @@ class LiveFFTWidget(QWidget):
                 fft_frame /= np.abs(fft_frame).max()
             else:
                 fft_frame *= (1 + self.fixedGainSlider.value()) / 5000000.
-                #print(np.abs(fft_frame).max())
             self.line_bottom.set_data(self.freq_vect, np.abs(fft_frame))            
-            
             # refreshes the plots
             self.main_figure.canvas.draw()
-
-
 
 '''
 Recognition thread
 '''
 class RecognitionThread(QtCore.QThread):
-    recognizeCompleted = QtCore.pyqtSignal(int, float)
+    recognizeCompleted = QtCore.pyqtSignal(int)
 
     @pyqtSlot()
     def run(self):
         '''
         Recognition
         '''
-        best_class,pred = self.predict()
-        high_freq = max(collections.Counter(pred).values())
-        acc = high_freq/len(pred)
-
-        self.recognizeCompleted.emit(best_class, acc)
-
-
+        best_class= self.predict()
+        self.recognizeCompleted.emit(best_class)
 
     # predicting the user
     def predict(self):
-        weight_file ="./output_nikitaa/checkpoints/SincNet.hdf5"
-        input_shape = (wlen, 1)
-        out_dim = class_lay[0]
-        model = get_model(input_shape, out_dim)
-        model.load_weights(weight_file)
-        x = VarManager.recognitionAudioPath
-        
-        [signal, fs] = sf.read(VarManager.recognitionAudioPath)
-        signal = np.array(signal)
-        splt_path = "/".join(x.split("/")[3:])
-
-        lab_batch=lab_dict[splt_path]
-        #split signals into chunck
-        beg_samp=0
-        end_samp=wlen
-        N_fr=int((signal.shape[0]-wlen)/(wshift))
-        sig_arr=np.zeros([Batch_dev,wlen])
-        pout =np.zeros(shape=(N_fr+1,class_lay[-1]))
-        count_fr=0
-        count_fr_tot=0
-        while end_samp<signal.shape[0]: #for each chunck
-            sig_arr[count_fr,:]=signal[beg_samp:end_samp]
-            beg_samp=beg_samp+wshift
-            end_samp=beg_samp+wlen
-            count_fr=count_fr+1
-            count_fr_tot=count_fr_tot+1
-            if count_fr==Batch_dev: 
-                a,b = np.shape(sig_arr)
-                inp = sig_arr.reshape(a,b,1)
-                inp = np.array(inp)
-                pout[count_fr_tot-Batch_dev:count_fr_tot,:] = model.predict(inp, verbose=0)
-                count_fr=0
-                sig_arr=np.zeros([Batch_dev,wlen])
-            #Add the last items left 
-        if count_fr>0:
-            inp = sig_arr[0:count_fr]
-            a,b = np.shape(inp)
-            inp = np.reshape(inp,(a,b,1))
-            pout[count_fr_tot-count_fr:count_fr_tot,:] = model.predict(inp, verbose=0)
-        #Prediction for each chunkc  and calculation of average error
-        pred = np.argmax(pout, axis=1)
-        best_class = np.argmax(np.sum(pout, axis=0))
-        print(pred)
-        print(best_class)
-        return best_class,pred
+        file_path = VarManager.recognitionAudioPath 
+        audio_filename = os.path.basename(file_path) 
+        multipart_form_data = {
+        'file': (audio_filename, open(file_path, 'rb'))
+        }
+    
+        result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
+        data = result.json()
+        #Make api request by post/get sending audio path
+        return data["user_id"]
 
 
 

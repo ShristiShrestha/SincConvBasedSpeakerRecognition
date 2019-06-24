@@ -4,11 +4,6 @@ from PyQt5.QtCore import pyqtSlot, QRunnable, QThreadPool
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import *
 
-from database import retrieve_data
-
-
-
-
 class InfoDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(InfoDialog, self).__init__(parent)
@@ -26,29 +21,16 @@ class InfoDialog(QtWidgets.QDialog):
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
-        #self.textBrowser = QtWidgets.QTextBrowser(self)
-        #self.textBrowser.append("This is a QTextBrowser!")
-
-        
-        #self.verticalLayout.addWidget(self.textBrowser)
-
-        #self.displayInfo(self.best_class,self.acc)
-
         self.verticalLayout.addWidget(self.buttonBox)
 
-        
-
-    def displayInfo(self, id, acc):
+    def displayInfo(self, id):
         self.nameLabel.setText(
-            "Model predicted you as:\n\n UserName :" + str(id) + "\nWith\n\nAccuracy :" +str(acc)+"\n"
+            "Model predicted you as:\n\n UserName :" + str(id)
         )
-
 
     def RetrieveData(self, id, acc):
     	data = retrieve_data(id)
     	if data!=None:
-    		print(data)
-
 	    	nameLabel = QtWidgets.QLabel(data.get("User_Name"))
 	    	self.verticalLayout.addWidget(nameLabel)
 
@@ -70,35 +52,3 @@ class InfoDialog(QtWidgets.QDialog):
 
 
 
-# def Recognition(object):
-
-# 	def __init__(self, parent):
-
-# 		self.hbox_widget = QtWidgets.QWidget()
-
-# 		self.hbox_Recognize = QtWidgets.QHBoxLayout()
-# 		SetButtons()
-
-# 		self.layout = QVBoxLayout(self)
-# 		self.layout.addLayout(self.hbox_Recognize)
-
-
-# 		self.hbox_widget.addLayout(hbox_Recognize)
-
-
-
-
-# 	def SetButtons(self):
-		
-# 		Recognize = QtWidgets.QLabel('Recognize:')
-# 		retrieve_button = QtWidgets.QPushButton('Retrieve', self)
-# 		retrieve_button.setIcon(QtGui.QIcon("img/retrieveIcon.png"))
-# 		retrieve_button.setToolTip('Retrive Data')
-
-# 		@pyqtSlot()
-# 		def on_retrieve_button_click(self):
-# 			recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Retriv...\n\n")
-
-# 		retrieve_button.clicked.connect(on_retrieve_button_click)
-# 		self.hbox_Recognize.addWidget(Recognize)
-# 		self.hbox_Recognize.addWidget(retrieve_button)

@@ -4,7 +4,6 @@ from PyQt5.QtCore import pyqtSlot, QRunnable, QThreadPool
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import *
 
-from database import *
 
 
 
