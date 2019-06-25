@@ -5,7 +5,7 @@ import datetime
 from test import test
 import pymysql.cursors
 from database import *
-
+import base64
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -24,21 +24,14 @@ def success():
 		print(t)
 		if not os.path.exists(path):
 			os.mkdir(path)
-		
-		#call validation function
-		speaker_id=0
-		username=""
-		total_time=""
 
 		f.save(os.path.join(path, t+".flac"))
-		result = test(os.path.join(path, t+".flac"))
-	
-		print(result)
-		res = jsonify(user_id=int(result),
-        	status=200,
-        	mimetype='application/json'
-    		)
-		x = retrieve_data(1)
+		result = test(os.path.join(path, t+".flac"))	
+		x = retrieve_data(int(result))
+		with open(x['Photo_Path'],"rb") as imageFile:
+			str_image = base64.encodestring(imageFile.read())
+		image = {'uname':x['User_Name'],'image':str(str_image),'status':200,'mimetype':'application/json'}
+		res = jsonify(image)
 		return res
 	else:
 		return render_template('./upload.html')
