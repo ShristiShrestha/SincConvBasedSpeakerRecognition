@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 #import requests
+from flask_mysqldb import MySQL
 import os, json
 import datetime
 
@@ -50,5 +51,3 @@ def forward():
 
 '''
 
-if __name__=='__main__':
-	app.run(debug=True)
