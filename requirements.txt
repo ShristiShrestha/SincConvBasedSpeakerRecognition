@@ -1,0 +1,11 @@
+keras
+tensorflow-gpu
+scipy
+librosa
+soundfile
+flask
+h5py
+tqdm
+pyqt5
+ffmpeg
+matplotlib
