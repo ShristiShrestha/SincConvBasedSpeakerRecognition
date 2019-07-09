@@ -21,6 +21,7 @@ from scipy import stats
 import collections
 
 
+
 def datetime_to_string():
     datetime_string = datetime.now().strftime("%d%m%Y_%H%M%S")
     return datetime_string
@@ -69,6 +70,8 @@ class RecognitionWorker(QRunnable):
             time.sleep(10.0)    
             recfile.stop_recording()
             LiveFFTWidget.stopRecord = 0
+        
+        VarManager.recognitionAudioPath = "records/testing/" + filename
 
 
 class CountWorker(QtCore.QThread):
@@ -302,6 +305,10 @@ class LiveFFTWidget(QWidget):
         self.recognitionThread.recognizeCompleted.connect(completed)
         self.recognitionThread.start()
 
+        recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Recognizing audio...\n\nWait")
+
+
+
     @pyqtSlot()
     def on_authenticate_button_click(self):
         self.authenticateWindow = AuthenticateWindow(self)
@@ -517,7 +524,7 @@ class LiveFFTWidget(QWidget):
 Recognition thread
 '''
 class RecognitionThread(QtCore.QThread):
-    recognizeCompleted = QtCore.pyqtSignal(str)
+    recognizeCompleted = QtCore.pyqtSignal(dict)
 
     @pyqtSlot()
     def run(self):
@@ -538,7 +545,7 @@ class RecognitionThread(QtCore.QThread):
         result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
         data = result.json()
         #Make api request by post/get sending audio path
-        return data['uname']
+        return data
 
 
 
