@@ -9,3 +9,6 @@ tqdm
 pyqt5
 ffmpeg
 matplotlib
+
+##### https://keras.io/
+
