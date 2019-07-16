@@ -543,7 +543,7 @@ class RecognitionThread(QtCore.QThread):
         }
     
         result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
-        data = result.json()
+        data = result.json() #convert result into json
         #Make api request by post/get sending audio path
         return data
 

@@ -6,7 +6,6 @@ from test import test
 import pymysql.cursors
 from database import *
 import base64
-from flask_sqlalchemy import SQLAlchemy
 from flask import send_file
 
 app = Flask(__name__)
@@ -30,7 +29,6 @@ def success():
 		result = test(os.path.join(path, t+".wav"))
 		print(result)	
 		if int(result)>=251 and int(result)<=261:
-
 			x = retrieve_data(int(result))
 			with open(x['Photo_Path'],"rb") as imageFile:
 				str_image = base64.encodestring(imageFile.read())
@@ -48,7 +46,6 @@ def insert_to_db():
 		audio_path="audio_upload/"
 		image_path = "image_upload/"
 		audio = request.files['audio']
-	
 		image = request.files['image']
 		user_name = request.form.get('uname')
 		user_id = request.form.get('user_id')

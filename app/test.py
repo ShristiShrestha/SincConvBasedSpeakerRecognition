@@ -12,12 +12,11 @@ import csv
 import scipy.signal
 
 class ZeroCrossing:
-    def __init__(self):
-
-        pass
+    def __init__(self,audio_path):
+        self.audio_path = audio_path
     
-    def Load(self, filepath):                   
-        self.data, self.sampling_rate= lb.load(filepath, sr=16000)
+    def Load(self):                   
+        self.data, self.sampling_rate= lb.load(self.audio_path, sr=16000)
         
         return
 	
@@ -54,8 +53,8 @@ class ZeroCrossing:
 
         return
     
-    def Write(self,fname, dest_fname):
-        self.Load(fname)
+    def Write(self):
+        self.Load()
         self.Label()
         self.Calc()
         data=[]
@@ -72,8 +71,8 @@ class ZeroCrossing:
         
 
         if len(data)>0:
-            
-            lb.output.write_wav(dest_fname, np.array(data), self.sampling_rate)
+            print("done")
+            lb.output.write_wav("uploads/niki.wav", np.array(data), self.sampling_rate)
             
         else:
             print("Zero rm_data pts", fname)
@@ -91,11 +90,11 @@ class ZeroCrossing:
         
         return [T1, SL, T2]
 
-def NoiseRemoval(fsrc, fdest):
+def NoiseRemoval(data, fdest):
 
-    y, sr = librosa.load(fsrc)
-    S_full, phase = librosa.magphase(librosa.stft(y)) 
-    idx = slice(*librosa.time_to_frames([0,7], sr=sr))
+    sr = 16000
+    S_full, phase = librosa.magphase(librosa.stft(data)) 
+    idx = slice(*librosa.time_to_frames([0,7], sr=16000))
     S_filter = librosa.decompose.nn_filter(S_full,
                                            aggregate=np.median,
                                            metric='cosine',
@@ -118,7 +117,7 @@ def NoiseRemoval(fsrc, fdest):
 
     x = librosa.istft(S_foreground) #final data to ZCR 
     x=x*2
-    #librosa.output.write_wav(fdest,x, sr)
+    librosa.output.write_wav(fdest,x, sr)
 
     return x
 
@@ -128,7 +127,9 @@ def test(audio_path):
     out_dim = 262
     model = get_model(input_shape, out_dim)
     model.load_weights(weight_file)
-    [signal, fs] = sf.read(audio_path)
+    zero_crossing = ZeroCrossing(audio_path)
+    signal = zero_crossing.Write()
+    """noise_removed_signal = NoiseRemoval(signal,"uploads/niki.wav")"""
     signal = np.array(signal)
     #lab_batch=lab_dict[data_folder + wav_lst_te[i]]
 
@@ -171,10 +172,3 @@ def test(audio_path):
     return best_class
 
 
-"""i = 0
-    for layer in model.layers:
-        #layer.trainable = False
-        i = i+1
-        print(i,layer.name)
-
-"""
