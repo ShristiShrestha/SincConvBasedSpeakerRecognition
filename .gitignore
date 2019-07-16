@@ -2,4 +2,5 @@ app/weights-improvement-370-0.81.hdf5
 data/
 GUI/__pycache__
 app/__pycache__
+GUI/GUI.pyc
 flaskapi/
