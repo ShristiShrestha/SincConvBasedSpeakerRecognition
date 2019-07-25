@@ -311,8 +311,20 @@ class LiveFFTWidget(QWidget):
 
     @pyqtSlot()
     def on_authenticate_button_click(self):
-        self.authenticateWindow = AuthenticateWindow(self)
-        self.authenticateWindow.exec_()
+        # self.authenticateWindow = AuthenticateWindow(self)
+        # self.authenticateWindow.exec_()
+
+        def completed(best_class):
+            self.authenticateBrowser = AuthenticateWindow(self)
+            self.authenticateBrowser.displayInfo(best_class, authorizedUser)
+            self.authenticateBrowser.exec_()
+        self.recognitionThread = RecognitionThread()
+        self.recognitionThread.recognizeCompleted.connect(completed)
+        self.recognitionThread.start()
+
+        recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Authenticating...\n\nWait")
+
+
         
 
     def SetTrainingLayout(self):
