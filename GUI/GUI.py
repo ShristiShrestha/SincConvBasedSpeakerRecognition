@@ -73,6 +73,7 @@ class RecognitionWorker(QRunnable):
             LiveFFTWidget.stopRecord = 0
         
         VarManager.recognitionAudioPath = "records/testing/" + filename
+        VarManager.audioUploaded = False
 
 
 class CountWorker(QtCore.QThread):
@@ -247,6 +248,7 @@ class LiveFFTWidget(QWidget):
             LiveFFTWidget.threadpool.start(worker)
             self.countWorker.start()
 
+
         record_button.clicked.connect(on_record_button_click)
         recordLayout.addWidget(Buttons)
         recordLayout.addWidget(record_button)
@@ -259,6 +261,7 @@ class LiveFFTWidget(QWidget):
             fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open file', '/home')
             if fname:
                 VarManager.recognitionAudioPath = fname
+                VarManager.audioUploaded = True
         
         upload_button.clicked.connect(on_upload_button_click)
         recordLayout.addWidget(upload_button)
@@ -322,7 +325,7 @@ class LiveFFTWidget(QWidget):
             self.authenticateBrowser = AuthenticateWindow(self)
             self.authenticateBrowser.displayInfo(best_class, self.authorizedUser, self.password)
             self.authenticateBrowser.exec_()
-        self.recognitionThread = RecognitionThread()
+        self.recognitionThread = AuthenticaitonThread()
         self.recognitionThread.recognizeCompleted.connect(completed)
         self.recognitionThread.start()
 
@@ -554,14 +557,60 @@ class RecognitionThread(QtCore.QThread):
     def predict(self):
         file_path = VarManager.recognitionAudioPath 
         audio_filename = os.path.basename(file_path) 
+        file = open(file_path, 'rb')
         multipart_form_data = {
-        'file': (audio_filename, open(file_path, 'rb'))
+        'file': (audio_filename, file)
         }
     
-        result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
-        data = result.json() #convert result into json
-        #Make api request by post/get sending audio path
-        return data
+        try:
+            result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
+            data = result.json() #convert result into json
+            #Make api request by post/get sending audio path
+            return data
+        except:
+            return {'uname': "error"}
+        finally:
+            file.close()
+            if not VarManager.audioUploaded:
+                print("executed")
+                if (os.path.exists(VarManager.recognitionAudioPath)):
+                    os.remove(VarManager.recognitionAudioPath)
+                    VarManager.recognitionAudioPath = ""
+
+
+class AuthenticaitonThread(QtCore.QThread):
+    recognizeCompleted = QtCore.pyqtSignal(dict)
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Recognition
+        '''
+        best_class= self.predict()
+        self.recognizeCompleted.emit(best_class)
+
+    # predicting the user
+    def predict(self):
+        file_path = VarManager.recognitionAudioPath 
+        audio_filename = os.path.basename(file_path)
+        file = open(file_path, 'rb')
+        multipart_form_data = {
+        'file': (audio_filename, file)
+        }
+    
+        try:
+            result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
+            data = result.json() #convert result into json
+            #Make api request by post/get sending audio path
+            return data
+        except:
+            return {'uname': "error"}
+        finally:
+            file.close()
+            if not VarManager.audioUploaded:
+                if (os.path.exists(VarManager.recognitionAudioPath)):
+                    os.remove(VarManager.recognitionAudioPath)
+                    VarManager.recognitionAudioPath
 
 
 

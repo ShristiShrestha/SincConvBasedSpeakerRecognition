@@ -11,6 +11,8 @@ import  math, json, librosa as lb
 import csv
 import scipy.signal
 
+from keras import backend as K
+
 class ZeroCrossing:
     def __init__(self,audio_path):
         self.audio_path = audio_path
@@ -122,6 +124,7 @@ def NoiseRemoval(data, fdest):
     return x
 
 def test(audio_path):
+    K.clear_session()
     weight_file = pt_file
     input_shape = (wlen,1)
     out_dim = 262

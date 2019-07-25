@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 
 from SendEmail import *
+from FinalWindow import *
 
 
 class AuthenticateWindow(QtWidgets.QDialog):
@@ -44,6 +45,7 @@ class AuthenticateWindow(QtWidgets.QDialog):
         
 
     def displayInfo(self, data, authorizedUser, password):
+
         if(data['uname'] == "error"):
             self.nameLabel.setText("Authentication Failed.\n\nTry again...")
             return
@@ -59,14 +61,22 @@ class AuthenticateWindow(QtWidgets.QDialog):
 
             enteredOtp = self.getText()
 
+            while (enteredOtp != newOtp):
+                enteredOtp = self.getText()
+
             if newOtp == enteredOtp:
                 self.nameLabel.setStyleSheet('color: black')
-                self.SplashScreen(str(data['uname']))
+                #self.SplashScreen(str(data['uname']))
+
+                self.finalBrowser = FinalDialog(self)
+                self.finalBrowser.displayInfo(username)
+                self.finalBrowser.show()
+                self.finalBrowser.exec_()
+
             else:
                 self.nameLabel.setText("OTP incorrect.\n\nTry again...")
                 self.nameLabel.setStyleSheet('color: red')
                 return
-
 
         # self.nameLabel.setText(
         #     "Model predicted you as:\n\n UserName : " + str(data['uname'])
@@ -142,14 +152,16 @@ class AuthenticateWindow(QtWidgets.QDialog):
         splashMessage = "<h1>Welcome </h1>" + username + "." 
         splash.showMessage(splashMessage, Qt.AlignTop | Qt.AlignCenter, Qt.black)
 
+
         for i in range(1, 11):
             progressBar.setValue(i)
             t = time.time()
             while time.time() < t + 0.1:
                 app.processEvents()
 
-        time.sleep(3)
+        time.sleep(2)
+
 
         splash.finish(None)
 
-        sys.exit(app.exec_())
+        app.exec_()

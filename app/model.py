@@ -9,6 +9,9 @@ from Configuration import *
 import numpy as np
 import math
 
+from keras import backend as K
+
+K.clear_session()
 
 #variables initialization
 debug = False
