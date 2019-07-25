@@ -19,6 +19,7 @@ from AuthenticateWindow import AuthenticateWindow
 from VarManager import VarManager
 from scipy import stats
 import collections
+import getpass
 
 
 
@@ -103,6 +104,9 @@ class LiveFFTWidget(QWidget):
     def __init__(self):
 
         QWidget.__init__(self)
+
+        self.authorizedUser = 260
+        self.password = getpass.getpass(prompt="Type password: ")
 
         self.iconName = "img/appIcon.svg"
         CreateFolder("records")
@@ -316,7 +320,7 @@ class LiveFFTWidget(QWidget):
 
         def completed(best_class):
             self.authenticateBrowser = AuthenticateWindow(self)
-            self.authenticateBrowser.displayInfo(best_class, authorizedUser)
+            self.authenticateBrowser.displayInfo(best_class, self.authorizedUser, self.password)
             self.authenticateBrowser.exec_()
         self.recognitionThread = RecognitionThread()
         self.recognitionThread.recognizeCompleted.connect(completed)

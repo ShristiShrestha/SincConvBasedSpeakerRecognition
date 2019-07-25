@@ -8,7 +8,7 @@ import math, random
 
 
 # function to send email
-def sendEmail(otp):
+def sendEmail(otp, password):
 	sender_email = "072bct535@pcampus.edu.np"
 	receiver_email = "shishirbhandari54@gmail.com"
 	message = """\
@@ -19,7 +19,6 @@ def sendEmail(otp):
 	message += otp
 
 	port = 465 # for ssl
-	password = getpass.getpass(prompt="Type gmail password: ")
 
 
 	#create a secure SSL context

@@ -2,6 +2,7 @@ import numpy as np
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import pyqtSlot, QRunnable, QThreadPool
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 
 from SendEmail import *
@@ -42,31 +43,35 @@ class AuthenticateWindow(QtWidgets.QDialog):
             return text;
         
 
-    def displayInfo(self, data, authorizedUser):
+    def displayInfo(self, data, authorizedUser, password):
         if(data['uname'] == "error"):
             self.nameLabel.setText("Authentication Failed.\n\nTry again...")
             return
 
-        newOtp = generateOTP()
-        sendEmail(newOtp)
+        user_id = data['uid']
 
-        enteredOtp = getText()
-
-        if newOtp == enteredOtp:
-            self.nameLabel.setStyleSheet('color: black')
-            SplashScreen(str(data['uname']))
-            pass
+        if(user_id!=authorizedUser):
+            self.nameLabel.setText("You are not authorized.\n\nTry again...")
+            self.nameLabel.setStyleSheet('color: red')
         else:
-            self.nameLabel.setText("OTP incorrect.\n\nTry again...")
-            self.nameLabel.setStyleSheet('color: orange')
-            return
+            newOtp = generateOTP()
+            sendEmail(newOtp, password)
+
+            enteredOtp = self.getText()
+
+            if newOtp == enteredOtp:
+                self.nameLabel.setStyleSheet('color: black')
+                self.SplashScreen(str(data['uname']))
+            else:
+                self.nameLabel.setText("OTP incorrect.\n\nTry again...")
+                self.nameLabel.setStyleSheet('color: red')
+                return
 
 
         # self.nameLabel.setText(
         #     "Model predicted you as:\n\n UserName : " + str(data['uname'])
         # )
 
-        user_id = data['uid']
 
         """
         response = requests.get('http://127.0.0.1:5000/get_image?user_id='+str(user_id), stream=True)
@@ -117,17 +122,19 @@ class AuthenticateWindow(QtWidgets.QDialog):
     def SplashScreen(self, username):
         import sys, time
 
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
 
 
         #Welcome screen
-        splash_pix = QPixmap('img/splash.png')
+        splash_pix = QtGui.QPixmap('img/splash.png')
 
-        splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+        splash_pix = splash_pix.scaled(512, 512, QtCore.Qt.KeepAspectRatio)
+
+        splash = QtWidgets.QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
         splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         splash.setEnabled(False)
 
-        progressBar = QProgressBar(Splash)
+        progressBar = QtWidgets.QProgressBar(splash)
         progressBar.setMaximum(10)
         progressBar.setGeometry(0, splash_pix.height() - 50, splash_pix.width(), 20)
 
@@ -143,4 +150,6 @@ class AuthenticateWindow(QtWidgets.QDialog):
 
         time.sleep(3)
 
-        sys.exit(app.exex_())
+        splash.finish(None)
+
+        sys.exit(app.exec_())
