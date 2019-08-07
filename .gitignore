@@ -1,8 +1,16 @@
-app/weights-improvement-370-0.81.hdf5
+.vscode/
+app/trial_1_0.81.hdf5
 data/
 GUI/__pycache__
 app/__pycache__
 GUI/GUI.pyc
 flaskapi/
+results/
+app/result1/
+app/result2/
+app/result3/
+app/MFCC_Model.py
+app/plot.py
+app/output_model/
 
 *.pyc

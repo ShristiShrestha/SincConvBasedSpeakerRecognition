@@ -24,6 +24,8 @@ def read_config(cfg_file = None):
     Config.read(cfg_file)
 
     #[data]
+    options.tr_lst = Config.get('data','tr_lst')
+    options.te_lst = Config.get('data', 'te_lst')
     options.lab_dict = Config.get('data', 'lab_dict')
     options.data_folder = Config.get('data', 'data_folder')
     options.output_folder = Config.get('data', 'output_folder')
@@ -87,10 +89,12 @@ import numpy as np
 
 #Reading cfg file
 
-options = read_config("sincnet_final.cfg")
+options = read_config("trial_1.cfg")
 
 
 #[data]
+tr_lst = options.tr_lst
+te_lst = options.te_lst
 pt_file = options.pt_file
 class_dict_file = options.lab_dict
 data_folder = options.data_folder+'/'
@@ -141,7 +145,13 @@ N_batches=int(options.N_batches)
 N_eval_epoch=int(options.N_eval_epoch)
 seed=int(options.seed)
 
+# training list
+wav_lst_tr=read_list(tr_lst) #Elenco file audio per il train
+snt_tr=len(wav_lst_tr)
 
+# test list
+wav_lst_te=read_list(te_lst)
+snt_te=len(wav_lst_te)
 
 
 #converting context and shift in shamples

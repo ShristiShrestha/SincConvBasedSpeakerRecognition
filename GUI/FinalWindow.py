@@ -10,16 +10,19 @@ from PIL import Image
 from io import BytesIO
 import shutil
 
-class InfoDialog(QtWidgets.QDialog):
+class FinalDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(InfoDialog, self).__init__(parent)
+        super(FinalDialog, self).__init__(parent)
         
-        self.setWindowTitle("Recognition")
+        self.setWindowTitle("Welcome")
 
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
 
         self.nameLabel = QtWidgets.QLabel("")
         self.verticalLayout.addWidget(self.nameLabel)
+
+        self.infoLabel = QtWidgets.QLabel("")
+        self.verticalLayout.addWidget(self.infoLabel)
 
         self.photoLabel = QLabel(self)
         self.verticalLayout.addWidget(self.photoLabel)
@@ -33,47 +36,29 @@ class InfoDialog(QtWidgets.QDialog):
 
         self.verticalLayout.addWidget(self.buttonBox)
 
-    def displayInfo(self, data):
-
-        if(data['uname'] == "error"):
-            self.nameLabel.setText("Model couldn't recognize you\n\n")
-            return
-        elif(data['status'] == 500):
-            self.nameLabel.setText("Internal server error\n\n")
-            return
+    def displayInfo(self, username):
 
         self.nameLabel.setText(
-            "Model predicted you as:\n\n UserName : " + str(data['uname'])
-            #+"\n" + "with accuracy :" + str(data['acc']
+            "Welcome " + str(username)
         )
-        
-        user_id = data['uid']
 
-        response = requests.get('http://127.0.0.1:5000/get_image?user_id='+str(user_id), stream=True)
+        self.infoLabel.setText(
+            "You are successfully authenticated"
+            )
 
+        splash_pix = QtGui.QPixmap('img/splash.png')
 
-        print(response)
-        
+        splash_pix = splash_pix.scaled(512, 512, QtCore.Qt.KeepAspectRatio)
 
+        self.photoLabel.setPixmap(splash_pix)
 
-        with open('temp_image.jpeg', 'wb') as file:
-            response.raw.decode_content = True
-            shutil.copyfileobj(response.raw, file)
-        del response
-
-
-        #qimg = Image.open(BytesIO(response.content))
+        """
         pixmap = QtGui.QPixmap('temp_image.jpeg')
-
-        #qimg = QtGui.QImage.fromData(image_data)
-        #pixmap = QtGui.QPixmap.fromImage(qimg)
-
-        #pixmap = QtGui.QPixmap.fromImage(qimg)
 
         pixmap = pixmap.scaled(512, 512, QtCore.Qt.KeepAspectRatio)
         self.photoLabel.setPixmap(pixmap)
         self.resize(pixmap.width(), pixmap.height())
-        
+        """
 
 
 

@@ -8,6 +8,8 @@ from keras import initializers
 from Configuration import *
 import numpy as np
 import math
+from keras import regularizers
+
 
 K.clear_session()
 
@@ -162,13 +164,13 @@ def sinc(band, t_right):
     y = K.concatenate([y_left, K.variable(K.ones(1)), y_right])
     return y
 
-
 #stacking model
 def get_model(input_shape, out_dim):
 
     #sinc layer
     inputs = Input(input_shape)
     #debug_print(inputs)
+    
     x = BatchNormalization(momentum = 0.05)(inputs)
     x = Sinc_Conv_Layer(cnn_N_filt[0], cnn_len_filt[0], fs)(x)
 
@@ -197,8 +199,17 @@ def get_model(input_shape, out_dim):
     if cnn_use_laynorm[2]:
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
+    
+    #cnn3
+    x = Conv1D(cnn_N_filt[2], cnn_len_filt[2], strides=1, padding='valid')(x)
+    x = MaxPooling1D(pool_size=cnn_max_pool_len[2])(x)
+    if cnn_use_batchnorm[2]:
+        x = BatchNormalization(momentum=0.05)(x)
+    if cnn_use_laynorm[2]:
+        x = Layer_Normalization()(x)
+    x = LeakyReLU(alpha=0.2)(x)
     x = Flatten()(x)
-
+    
     #dnn1
     if fc_use_laynorm_inp:
         x =Layer_Normalization()(x)
@@ -209,7 +220,9 @@ def get_model(input_shape, out_dim):
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
     x = Dropout(0.2)(x)
-    #dnn2
+    
+    if fc_use_laynorm_inp:
+        x =Layer_Normalization()(x)
     x = Dense(fc_lay[1])(x)
     if fc_use_batchnorm[1]:
         x = BatchNormalization(momentum=0.05)(x)
@@ -217,8 +230,9 @@ def get_model(input_shape, out_dim):
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
     x = Dropout(0.2)(x)
-
-    #dnn3
+    
+    if fc_use_laynorm_inp:
+        x =Layer_Normalization()(x)
     x = Dense(fc_lay[2])(x)
     if fc_use_batchnorm[2]:
         x = BatchNormalization(momentum=0.05)(x)
@@ -226,9 +240,10 @@ def get_model(input_shape, out_dim):
         x = Layer_Normalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
     x = Dropout(0.2)(x)
-
+    
+    
     # DNN final
     prediction = Dense(out_dim, activation='softmax')(x)
     model = Model(inputs=inputs, outputs=prediction)
+    
     return model
-

@@ -10,3 +10,4 @@ pyqt5
 ffmpeg
 matplotlib
 
+
