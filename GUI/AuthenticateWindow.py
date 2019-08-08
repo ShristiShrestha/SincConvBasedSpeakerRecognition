@@ -107,7 +107,27 @@ class AuthenticateWindow(QtWidgets.QDialog):
         self.resize(pixmap.width(), pixmap.height())
         """
 
-    
+    def Identification(self, data, enteredUsername):
+        if(data['uname'] == "error"):
+            self.nameLabel.setText("Authentication Failed.\n\nTry again...")
+            return
+
+        user_id = data['uid']
+        user_name = data['uname']
+
+        if(user_name!=enteredUsername):
+            self.nameLabel.setText("You are not authorized.\n\nTry again...")
+            self.nameLabel.setStyleSheet('color: red')
+        else:
+            self.nameLabel.setStyleSheet('color: black')
+            #self.SplashScreen(str(data['uname']))
+
+            self.finalBrowser = FinalDialog(self)
+            self.finalBrowser.displayInfo(data['uname'])
+            self.finalBrowser.show()
+            self.finalBrowser.exec_()
+            return
+
     #not used
     def RetrieveData(self, id):
         data = retrieve_data(id)

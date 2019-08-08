@@ -1,6 +1,7 @@
 import numpy as np
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import pyqtSlot, QRunnable, QThreadPool
+from PyQt5 import QtMultimedia
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import *
 from datetime import datetime
@@ -22,10 +23,31 @@ import collections
 import getpass
 
 
+from MediaPlayer import *
+
 
 def datetime_to_string():
     datetime_string = datetime.now().strftime("%d%m%Y_%H%M%S")
     return datetime_string
+
+
+def message_box(title, msg, gif=True):
+    trainInfo = QtWidgets.QMessageBox()
+    trainInfo.setIconPixmap(QtGui.QPixmap('img/loader.gif').scaledToWidth(25))
+    icon_label = trainInfo.findChild(QLabel, "qt_msgboxex_icon_label")
+    movie = QtGui.QMovie('img/loader.gif')
+    # avoid garbage collector
+    setattr(trainInfo, 'icon_label', movie)
+    if gif:
+        icon_label.setMovie(movie)
+    movie.start()
+
+    trainInfo.setText(msg)
+    trainInfo.setWindowTitle(title)
+    trainInfo.setModal(True)
+    trainInfo.show()
+
+    return trainInfo
 
 
 class Worker(QRunnable):
@@ -146,8 +168,8 @@ class LiveFFTWidget(QWidget):
         hbox_gain = QtWidgets.QHBoxLayout()
         autoGain = QtWidgets.QLabel('Auto gain for frequency spectrum')
         autoGainCheckBox = QtWidgets.QCheckBox(checked=True)
-        hbox_gain.addWidget(autoGain)
-        hbox_gain.addWidget(autoGainCheckBox)
+        #hbox_gain.addWidget(autoGain)
+        #hbox_gain.addWidget(autoGainCheckBox)
         
         # reference to checkbox
         self.autoGainCheckBox = autoGainCheckBox
@@ -187,9 +209,18 @@ class LiveFFTWidget(QWidget):
         vbox.addLayout(self.trainingLayout)
         vbox.addLayout(hbox_gain)
     
+
+        vbox.addLayout(self.emptyHLayout)
+        vbox.addLayout(self.emptyHLayout)
+
         # mpl figure
         self.main_figure = MplFigure(self)
-        vbox.addWidget(self.main_figure.toolbar)
+        
+        #graph toolbar
+        toolbar_Hbox = QtWidgets.QHBoxLayout()
+        #vbox.addWidget(self.main_figure.toolbar)
+        toolbar_Hbox.addWidget(self.main_figure.toolbar)
+        vbox.addLayout(toolbar_Hbox)
         vbox.addWidget(self.main_figure.canvas)
         
         self.tab1.setLayout(vbox)
@@ -199,7 +230,7 @@ class LiveFFTWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
         
-        self.setGeometry(200, 100, 600, 625)
+        self.setGeometry(200, 100, 600, 425)
         self.setWindowTitle('Speaker Recognition')
         self.setWindowIcon(QtGui.QIcon(self.iconName))
         self.setFixedSize(self.size())
@@ -247,6 +278,7 @@ class LiveFFTWidget(QWidget):
             worker = RecognitionWorker()
             LiveFFTWidget.threadpool.start(worker)
             self.countWorker.start()
+            VarManager.audioUploaded = False
 
 
         record_button.clicked.connect(on_record_button_click)
@@ -256,19 +288,50 @@ class LiveFFTWidget(QWidget):
         upload_button = QtWidgets.QPushButton('Upload', self)
         upload_button.setIcon(QtGui.QIcon("img/upload.png"))
         upload_button.setToolTip('Upload your voice.')
+        self.uploadLabel = QtWidgets.QLabel()
         @pyqtSlot()
-        def on_upload_button_click(self):
+        def on_upload_button_click():
             fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open file', '/home')
             if fname:
                 VarManager.recognitionAudioPath = fname
                 VarManager.audioUploaded = True
+                self.uploadLabel.setText(fname)
         
         upload_button.clicked.connect(on_upload_button_click)
         recordLayout.addWidget(upload_button)
+        recordLayout.addWidget(self.uploadLabel)
+
+        #Clear button
+        clear_button = QtWidgets.QPushButton('Clear data', self)
+        clear_button.setIcon(QtGui.QIcon("img/clear_icon_up.png"))
+        clear_button.setToolTip('Clear all data.')
+
+
+        @pyqtSlot()
+        def on_clear_button_click():
+            VarManager.recognitionAudioPath = ""
+            self.uploadLabel.setText = ""
+            VarManager.clearToggle = not VarManager.clearToggle
+
+            if(VarManager.clearToggle == False):
+                clear_button.setIcon(QtGui.QIcon("img/clear_icon_up.png"))
+            else:
+                clear_button.setIcon(QtGui.QIcon("img/clear_icon_down.png"))
+        
+        clear_button.clicked.connect(on_clear_button_click)
+        recordLayout.addWidget(clear_button)
+
+
 
         progressHLayout = QtWidgets.QHBoxLayout()
         progressHLayout.addWidget(self.progress)
         progressHLayout.addWidget(completed_label)
+
+        #Play audio
+        playHLayout = QtWidgets.QHBoxLayout()
+        print(VarManager.recognitionAudioPath)
+        self.playButton = getButton("Play Audio", VarManager.recognitionAudioPath)# "C:/Users/Lenovo/Music/TextToSpeech.wav")
+        playHLayout.addWidget(self.playButton)
 
 
         recognizeLayout = QtWidgets.QHBoxLayout()
@@ -293,6 +356,7 @@ class LiveFFTWidget(QWidget):
         
         self.vbox2.addLayout(recordLayout)
         self.vbox2.addLayout(progressHLayout)
+        self.vbox2.addLayout(playHLayout)
         self.vbox2.addLayout(recognizeLayout) 
         self.vbox2.addLayout(self.emptyHLayout)
         
@@ -312,25 +376,40 @@ class LiveFFTWidget(QWidget):
         self.recognitionThread.recognizeCompleted.connect(completed)
         self.recognitionThread.start()
 
-        recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Recognizing audio...\n\nWait")
+        #recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Recognizing audio...\n\nWait")
+        rec_info = message_box("Wait", "Recognition in progress...", True)
+        rec_info.exec()
+        #return
 
-
+    def getInputName(self):
+        text, okPressed = QInputDialog.getText(self, "Get text", "Enter Username:", QLineEdit.Normal, "")
+        if okPressed and text != '':
+            return text;
 
     @pyqtSlot()
     def on_authenticate_button_click(self):
         # self.authenticateWindow = AuthenticateWindow(self)
         # self.authenticateWindow.exec_()
 
+
+        enteredUsername = self.getInputName()
+
+        while (enteredUsername != newOtp):
+            enteredUsername = self.getInputName()
+
         def completed(best_class):
             self.authenticateBrowser = AuthenticateWindow(self)
-            self.authenticateBrowser.displayInfo(best_class, self.authorizedUser, self.password)
+            #self.authenticateBrowser.displayInfo(best_class, self.authorizedUser, self.password)
+            self.authenticateBrowser.identification(best_class, enteredUsername)
             self.authenticateBrowser.exec_()
         self.recognitionThread = AuthenticaitonThread()
         self.recognitionThread.recognizeCompleted.connect(completed)
         self.recognitionThread.start()
 
-        recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Authenticating...\n\nWait")
-
+        #recording_info = QtWidgets.QMessageBox.information(None, "Info!", "Authenticating...\n\nWait")
+        rec_info = message_box("Wait", "Authentication in progress...", True)
+        rec_info.exec()
+        
 
         
 
@@ -346,11 +425,19 @@ class LiveFFTWidget(QWidget):
         train_button.setToolTip("Train voice to neural network.")
         @pyqtSlot()
         def on_train_button_click():
-            user_id = 1
-            response = requests.get('http://127.0.0.1:5000/training?user_id='+str(user_id), stream=True)
-            if response['code']==200:
-                print("Training")
+            # user_id = 1
+            user_id = VarManager.userID
 
+            try:
+                response = requests.get('http://127.0.0.1:5000/training?user_id='+str(user_id), stream=True)
+                if response['code']==200:
+                    print("Training")
+                #trainInfo = QtWidgets.QMessageBox.information(None, "Success", "Training in progress...")
+                trainInfo = message_box("Success", "Training in progress...", True)
+                trainInfo.exec()
+            except:
+                trainInfo = message_box("Error", "Cannot connect to server...", False)
+                trainInfo.exec()
             
 
         db_button.clicked.connect(self.on_db_button_click)
@@ -367,34 +454,55 @@ class LiveFFTWidget(QWidget):
             VarManager.userName = self.get_name()
             self.generateUserID()
             VarManager.photoPath += str(VarManager.userID) + VarManager.photoExt
-            shutil.copy(VarManager.sourcePhotoPath, VarManager.photoPath)
+            try:
+                shutil.copy(VarManager.sourcePhotoPath, VarManager.photoPath)
+            except:
+                copyError = message_box("Error", "Image not uploaded...", False)
+                copyError.exec()
+                return
 
             if(VarManager.audioUploaded):
-                VarManager.audioPath = "uploads/audios/"
-                VarManager.audioPath += str(VarManager.userID) + ".wav"
-                exists = os.path.isfile(VarManager.audioPath)
-                if(exists):
-                    pass
-                else:
-                    shutil.copy(VarManager.sourceAudioPath, VarManager.audioPath)
+                try:
+                    VarManager.audioPath = "uploads/audios/"
+                    VarManager.audioPath += str(VarManager.userID) + ".wav"
+                    exists = os.path.isfile(VarManager.audioPath)
+                    if(exists):
+                        pass
+                    else:
+                        shutil.copy(VarManager.sourceAudioPath, VarManager.audioPath)
+                except:
+                    copyError = message_box("Error", "Audio not found...", False)
+                    copyError.exec()
+                    return
             audio_filename = os.path.basename(VarManager.audioPath)
             image_filename =  os.path.basename(VarManager.photoPath)
-            multipart_form_data =  MultipartEncoder(
-            fields={
-            # a file upload field
-            'audio': (audio_filename, open(VarManager.audioPath, 'rb')),
-            'image':(image_filename, open(VarManager.photoPath, 'rb')),
-            # plain text fields
-            'uname': VarManager.userName, 
-            'user_id':str(VarManager.userID),
-           } )
-            result = requests.post("http://127.0.0.1:5000/insert",data=multipart_form_data,headers={'Content-Type': multipart_form_data.content_type})
-            data = result.json()
-            if data["message"]=="Success":
-                updateInfo = QtWidgets.QMessageBox.information(None, "Success", "Database Updated...")
-            elif data["message"]=="Error":
-                updateInfo = QtWidgets.QMessageBox.information(None, "Error", "Database Connection failed...")
-            else:
+
+            try:
+                multipart_form_data =  MultipartEncoder(
+                fields={
+                # a file upload field
+                'audio': (audio_filename, open(VarManager.audioPath, 'rb')),
+                'image':(image_filename, open(VarManager.photoPath, 'rb')),
+                # plain text fields
+                'uname': VarManager.userName, 
+                'user_id':str(VarManager.userID),
+               } )
+            except:
+                rec_info = message_box("Wait", "Audio not found...\nTry Again...", False)
+                rec_info.exec()
+                return
+
+            try:
+                result = requests.post("http://127.0.0.1:5000/insert",data=multipart_form_data,headers={'Content-Type': multipart_form_data.content_type})
+                data = result.json()
+                if data["message"]=="Success":
+                    updateInfo = QtWidgets.QMessageBox.information(None, "Success", "Database Updated...")
+                elif data["message"]=="Error":
+                    updateInfo = QtWidgets.QMessageBox.information(None, "Error", "Database Connection failed...")
+                else:
+                    updateInfo = QtWidgets.QMessageBox.information(None, "Error", "Bad requests")
+
+            except:
                 updateInfo = QtWidgets.QMessageBox.information(None, "Error", "Bad requests")
 
     def get_name(self):
@@ -411,9 +519,13 @@ class LiveFFTWidget(QWidget):
         def on_record_button_click(self):
             if(LiveFFTWidget.recording==False):
                 LiveFFTWidget.recording = True
-                recording_info = QtWidgets.QMessageBox.information(None, "Info", "Recording started...\n\nClick Stop to stop recording")
+
                 worker = Worker()
                 LiveFFTWidget.threadpool.start(worker)
+                print("Recording")
+                #recording_info = QtWidgets.QMessageBox.information(None, "Info", "Recording started...\n\nClick Stop to stop recording.")
+                recording_info = message_box("Recording started", "Recording in progress... \nClick Stop to stop recording.", True)
+                recording_info.exec()
             else:
                 recording_info = QtWidgets.QMessageBox.information(None, "Warning!", "Already Recording audio...\n\nClick Stop to stop recording")
 
@@ -504,11 +616,11 @@ class LiveFFTWidget(QWidget):
         """creates initial matplotlib plots in the main window and keeps 
         references for further use"""
         # top plot
-        self.ax_top = self.main_figure.figure.add_subplot(211)
+        """self.ax_top = self.main_figure.figure.add_subplot(211)
         self.ax_top.set_ylim(-5000, 5000)
         self.ax_top.set_xlim(0, self.time_vect.max())
         self.ax_top.set_xlabel(u'time (ms)', fontsize=6)
-        self.ax_top.set_ylabel(u'amp', fontsize=6)
+        self.ax_top.set_ylabel(u'amp', fontsize=6)"""
         # bottom plot
         self.ax_bottom = self.main_figure.figure.add_subplot(212)
         self.ax_bottom.set_ylim(0, 1)
@@ -518,8 +630,8 @@ class LiveFFTWidget(QWidget):
         
         # line objects
         self.main_figure.figure.tight_layout()        
-        self.line_top, = self.ax_top.plot(self.time_vect, 
-                                         np.ones_like(self.time_vect))
+        #self.line_top, = self.ax_top.plot(self.time_vect, 
+         #                                np.ones_like(self.time_vect))
 
         self.line_bottom, = self.ax_bottom.plot(self.freq_vect,
                                                np.ones_like(self.freq_vect))
@@ -533,7 +645,7 @@ class LiveFFTWidget(QWidget):
             # keeps only the last frame
             current_frame = frames[-1]
             # plots the time signal
-            self.line_top.set_data(self.time_vect, current_frame)
+            #self.line_top.set_data(self.time_vect, current_frame)
             # computes and plots the fft signal            
             fft_frame = np.fft.rfft(current_frame)
             if self.autoGainCheckBox.checkState() == QtCore.Qt.Checked:
@@ -568,9 +680,13 @@ class RecognitionThread(QtCore.QThread):
         }
     
         try:
-            result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
-            data = result.json() #convert result into json
-            #Make api request by post/get sending audio path
+            if not VarManager.clearToggle:
+                result = requests.post("http://127.0.0.1:5000/identification",files=multipart_form_data)
+                data = result.json() #convert result into json
+                #Make api request by post/get sending audio path
+            else:
+                result = requests.post("http://127.0.0.1:5000/demo",files=multipart_form_data)
+                data = result.json()
             return data
         except:
             return {'uname': "error"}

@@ -42,37 +42,42 @@ class InfoDialog(QtWidgets.QDialog):
             self.nameLabel.setText("Internal server error\n\n")
             return
 
-        self.nameLabel.setText(
-            "Model predicted you as:\n\n UserName : " + str(data['uname'])
-            #+"\n" + "with accuracy :" + str(data['acc']
-        )
-        
-        user_id = data['uid']
+        if(int(data['acc']) > 0.4 ):
+            self.nameLabel.setText(
+                "Model predicted you as:\n\n UserName : " + str(data['uname'])
+                #+"\n" + "with accuracy :" + str(data['acc']
+            )
+            
+            user_id = data['uid']
 
-        response = requests.get('http://127.0.0.1:5000/get_image?user_id='+str(user_id), stream=True)
-
-
-        print(response)
-        
+            response = requests.get('http://127.0.0.1:5000/get_image?user_id='+str(user_id), stream=True)
 
 
-        with open('temp_image.jpeg', 'wb') as file:
-            response.raw.decode_content = True
-            shutil.copyfileobj(response.raw, file)
-        del response
+            print(response)
+            
 
 
-        #qimg = Image.open(BytesIO(response.content))
-        pixmap = QtGui.QPixmap('temp_image.jpeg')
+            with open('temp_image.jpeg', 'wb') as file:
+                response.raw.decode_content = True
+                shutil.copyfileobj(response.raw, file)
+            del response
 
-        #qimg = QtGui.QImage.fromData(image_data)
-        #pixmap = QtGui.QPixmap.fromImage(qimg)
 
-        #pixmap = QtGui.QPixmap.fromImage(qimg)
+            #qimg = Image.open(BytesIO(response.content))
+            pixmap = QtGui.QPixmap('temp_image.jpeg')
 
-        pixmap = pixmap.scaled(512, 512, QtCore.Qt.KeepAspectRatio)
-        self.photoLabel.setPixmap(pixmap)
-        self.resize(pixmap.width(), pixmap.height())
+            #qimg = QtGui.QImage.fromData(image_data)
+            #pixmap = QtGui.QPixmap.fromImage(qimg)
+
+            #pixmap = QtGui.QPixmap.fromImage(qimg)
+
+            pixmap = pixmap.scaled(512, 512, QtCore.Qt.KeepAspectRatio)
+            self.photoLabel.setPixmap(pixmap)
+            self.resize(pixmap.width(), pixmap.height())
+
+        else:
+            self.nameLabel.setText("Model couldn't recognize you\n\n")
+            return
         
 
 

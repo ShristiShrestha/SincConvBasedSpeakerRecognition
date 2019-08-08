@@ -9,3 +9,5 @@ class VarManager():
     audioUploaded = False
     recognitionAudioPath = ""
     progressValue = 0
+
+    clearToggle = False
