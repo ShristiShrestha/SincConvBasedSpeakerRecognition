@@ -66,18 +66,3 @@ In order to tune parameters other layers such as MaxPooling, Leaky ReLU, Layer N
   <li> <h6> user/path/> cd GUI </h6></li>
   <li> <h6> user/path/GUI> python main.py </h6></li>
 </ul>
-
-<h3> Results: </h3>
-<h5>Inputs: </h5>
-<ul>
-  <li> </li>
-  <li> </li>
-  <li> </li>
-  <li> </li>
-  <li> </li>
-</ul>
-<h5>Outputs: </h5>
-![Loss and Validation](http://url/to/img.png)
-
-<h3> Analysis with other models </h3>
-
